@@ -1,15 +1,22 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.hashers import make_password
 
 
 class User(models.Model):
     username = models.CharField(max_length=50, unique=True, db_index=True, verbose_name='Логин')
     email = models.EmailField(max_length=100, unique=True, db_index=True, verbose_name='Электронная почта')
-    hashed_password = models.CharField(max_length=255, verbose_name='Хешированный пароль')
+    hashed_password = models.CharField(max_length=255, verbose_name='Пароль')
     is_active = models.BooleanField(default=True, verbose_name='Активен')
     created_at = models.DateTimeField(auto_now_add=timezone.now, verbose_name='Создан')
     last_seen = models.DateTimeField(auto_now=timezone.now, verbose_name='Последний вход')
     is_online = models.BooleanField(default=False, verbose_name='Онлайн')
+
+    def save(self, *args, **kwargs):
+        # Если пароль не начинается с алгоритма хеширования
+        if not self.hashed_password.startswith('pbkdf2_'):
+            self.hashed_password = make_password(self.hashed_password)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.username}"
